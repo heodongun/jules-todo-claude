@@ -1,0 +1,46 @@
+name: Jules Issue Assignment
+
+on:
+  issues:
+    types: [opened, labeled]
+
+jobs:
+  assign-to-jules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Assign issue to Jules
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+
+          # Create a feature branch for the issue
+          BRANCH_NAME="feature/issue-${ISSUE_NUMBER}"
+
+          # Add comment with instructions for Jules
+          gh issue comment ${ISSUE_NUMBER} --body "🤖 **Jules Assignment**
+
+          This issue has been automatically assigned for implementation.
+
+          **Branch:** \`${BRANCH_NAME}\`
+
+          **Instructions:**
+          1. Create the branch: \`git checkout -b ${BRANCH_NAME}\`
+          2. Implement the feature according to acceptance criteria
+          3. Write comprehensive tests
+          4. Update documentation as needed
+          5. Create a PR when ready
+
+          **Git Flow Process:**
+          - Feature branches: \`feature/*\`
+          - Bugfix branches: \`bugfix/*\`
+          - Hotfix branches: \`hotfix/*\`
+
+          Please follow the project's coding standards and include tests for all new functionality."
+
+          # Add labels for Jules tracking
+          gh issue edit ${ISSUE_NUMBER} --add-label "jules-assigned"
