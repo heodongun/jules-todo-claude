@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: board-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: boarddb
+      MYSQL_USER: board_user
+      MYSQL_PASSWORD: board_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - board-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: board-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: jdbc:mysql://mysql:3306/boarddb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      DATABASE_USER: board_user
+      DATABASE_PASSWORD: board_password
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - board-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: board-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - board-network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  board-network:
+    driver: bridge
